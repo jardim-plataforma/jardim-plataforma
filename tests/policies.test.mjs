@@ -23,3 +23,31 @@ test('relações fornecidas em laboratório ainda precisam ser válidas',()=>{
  const lab=structuredClone(notes.find(n=>n.meta.type==='laboratorio'));lab.meta.relations=[{target:'inexistente',kind:'documenta'}];
  assert.match(validate(notes.map(n=>n.slug===lab.slug?lab:n)).join('\n'),/relação inexistente/);
 });
+
+
+test('conceito isolado explicitamente dispensa conexões',()=>{
+ const copy=structuredClone(notes);const n=copy.find(n=>n.meta.type==='conceito');
+ n.meta.isolated=true;n.meta.relations=[];
+ assert.deepEqual(validate(copy),[]);
+});
+test('conceito sem opção explícita ainda exige conexão',()=>{
+ for(const flag of [undefined,false]){
+  const copy=structuredClone(notes);const n=copy.find(n=>n.meta.type==='conceito');
+  if(flag===undefined)delete n.meta.isolated;else n.meta.isolated=flag;
+  n.meta.relations=[];assert.match(validate(copy).join('\n'),/inclua ao menos uma relação/);
+ }
+});
+test('isolamento não dispensa metadados modelo ou conexões válidas',()=>{
+ const copy=structuredClone(notes);const n=copy.find(n=>n.meta.type==='conceito');
+ n.meta.isolated=true;n.meta.relations=[];
+ delete n.meta.title;n.body=n.body.replace('## Exemplo','## Outro');
+ n.meta.relations.push({target:'nao-existe',kind:'utiliza'});
+ const errors=validate(copy).join('\n');
+ assert.match(errors,/obrigatório/);assert.match(errors,/seção/);assert.match(errors,/relação inexistente/);
+});
+test('isolamento exige booleano e não se aplica a guias',()=>{
+ const copy=structuredClone(notes);const n=copy.find(n=>n.meta.type==='conceito');
+ n.meta.isolated='true';assert.match(validate(copy).join('\n'),/isolated deve ser booleano/);
+ const guide=structuredClone(notes);guide.find(n=>n.meta.type==='guia').meta.isolated=true;
+ assert.match(validate(guide).join('\n'),/isolated deve ser booleano/);
+});

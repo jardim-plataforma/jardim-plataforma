@@ -32,7 +32,8 @@ export function validate(notes) {
   }
   const links=[...prose.matchAll(/\[\[([^\]|#]+)(?:#[^\]|]+)?(?:\|[^\]]+)?\]\]/g)].map(x=>x[1]);
   for(const link of links)if(!slugs.has(link))fail(`wikilink inexistente: ${link}`);
-  if(m.type!=='laboratorio'&&(!Array.isArray(m.relations)||!m.relations.length))fail('inclua ao menos uma relação');
+  if(m.isolated!==undefined&&(m.type!=='conceito'||typeof m.isolated!=='boolean'))fail('isolated deve ser booleano e usado apenas em conceitos');
+  if(m.type!=='laboratorio'&&!(m.type==='conceito'&&m.isolated===true)&&(!Array.isArray(m.relations)||!m.relations.length))fail('inclua ao menos uma relação');
   if(m.relations!==undefined&&!Array.isArray(m.relations))fail('relações devem ser uma lista');
   for(const rel of Array.isArray(m.relations)?m.relations:[]){
    if(!rel || !slugs.has(rel.target))fail(`relação inexistente: ${rel?.target}`);
