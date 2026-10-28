@@ -1,88 +1,165 @@
 ---
-{
-  "title": "03 · Evoluir um contrato por entregas pequenas e utilizáveis",
-  "description": "Executar uma evolução compatível por incrementos integrados, mantendo a principal utilizável e demonstrando a diferença entre integrar código e habilitar comportamento.",
-  "type": "laboratorio",
-  "stage": "aprender",
-  "status": "em-estudo",
-  "created": "2026-10-21",
-  "updated": "2026-10-21",
-  "tags": [
-    "git",
-    "trunk-based",
-    "github",
-    "gitlab"
-  ]
-}
+title: "03 · Migrar pipelines para um padrão reutilizável por entregas pequenas"
+description: "Centralize a validação de dois serviços sem interromper suas pipelines, praticando workflows reutilizáveis, parâmetros e integração frequente com Trunk-Based."
+type: laboratorio
+stage: aprender
+status: em-estudo
+created: "2026-10-21"
+updated: "2026-10-28"
+tags:
+  - git
+  - trunk-based
+  - github-actions
+  - yaml
+  - ci
+  - workflows-reutilizaveis
+  - diagnostico
 ---
+
+# 03 · Migrar pipelines para um padrão reutilizável por entregas pequenas
+
+[Organização Jardim de Plataforma](https://github.com/jardim-plataforma) · [Repositório do laboratório](https://github.com/jardim-plataforma/lab-03-evolucao-incremental)
 
 ## Contexto
 
-O serviço vai trocar o campo legado `status` por uma representação mais rica, mas consumidores antigos continuam em uso. O time não aceita manter uma branch isolada até a migração terminar: outras mudanças precisam continuar entrando na principal. A entrega deve permitir adoção gradual e recuperação antes da remoção definitiva do contrato antigo.
+Dois serviços já funcionam e possuem testes: um catálogo de recursos e um leitor de estado de supervisão. Cada um mantém seu próprio workflow. Ambos fazem checkout, preparam Python, executam a validação e registram um resultado. Essa sequência está duplicada.
+
+A repetição parece pequena, mas cria dois pontos de manutenção. Uma melhoria de diagnóstico, uma atualização de ferramenta ou uma correção do tratamento de falhas precisa alcançar todas as cópias. A equipe de plataforma recebeu a demanda de centralizar essa execução e permitir que cada consumidor declare somente suas particularidades.
+
+Os serviços não são idênticos. O catálogo precisa ser verificado em Python 3.11 e 3.12 e guarda os testes em `tests/`. A supervisão usa Python 3.12 e guarda as verificações em `verificacoes/`. Um padrão que funcione apenas com o diretório ou a versão de um deles não resolve a demanda.
+
+Você manterá a automação. As aplicações, seus contratos HTTP, os testes e o executor Python já estão prontos. O cenário usa dados de demonstração e reproduz um problema de manutenção de CI; não representa um incidente real específico.
 
 ## Objetivo da entrega
 
-Executar uma evolução compatível por incrementos integrados, mantendo a principal utilizável e demonstrando a diferença entre integrar código e habilitar comportamento.
+Entregar uma validação reutilizável, adotada pelos dois workflows consumidores, preservando suas configurações e a reprovação de verificações obrigatórias. A migração será integrada por pequenos incrementos utilizáveis: primeiro o padrão testável, depois um consumidor, depois o outro e, por fim, a limpeza do apoio temporário.
+
+Os conceitos centrais são **Trunk-Based** e **reutilização de workflows**. YAML, parâmetros, matrizes, revisão e diagnóstico serão usados para realizar essa mudança. O resultado será a automação operando nos dois consumidores; não haverá pacote ZIP, imagem de container ou publicação de Release como produto desta prática.
 
 ## Ponto de partida
 
-Use outra cópia independente do serviço inicial, no repositório desta demanda. Defina um consumidor legado e um consumidor novo como verificações reproduzíveis. A configuração que controla a exposição da resposta nova deve ser simples e documentada; não é necessário instalar uma plataforma de feature flags.
+O projeto contém duas aplicações executáveis e duas pipelines funcionais, sem falha mascarada. A migração ainda não foi implementada. O arquivo `tools/verify_service.py` executa testes reais e permite provocar uma reprovação controlada para conferir a propagação de falhas.
 
+| Consumidor da automação | Projeto | Testes, relativos ao projeto | Python esperado |
+|---|---|---|---|
+| CI do catálogo | `services/catalogo` | `tests` | 3.11 e 3.12 |
+| CI da supervisão | `services/supervisao` | `verificacoes` | 3.12 |
 
-### Repositório desta demanda
+Aqui, “consumidor” significa um workflow que utiliza a automação compartilhada. Não são os clientes HTTP estudados no Lab 1. Não é necessário modificar os campos de uma API para fazer este laboratório.
 
-Organização: [Jardim de Plataforma](https://github.com/jardim-plataforma). Nome previsto: `lab-03-evolucao-incremental`. Crie-o nessa organização quando iniciar a prática; o pacote contém seu README e enunciado. O endereço previsto é `https://github.com/jardim-plataforma/lab-03-evolucao-incremental` — ele só estará disponível depois da criação.
+Requisitos: Git, Python 3.11 ou 3.12 local e permissão para executar GitHub Actions. Os runners remotos serão Ubuntu. As aplicações e ferramentas Python usam apenas a biblioteca padrão. Não são necessários Docker, AWS, banco externo, secrets ou outro serviço de infraestrutura.
 
-Comece da mesma base `servico-catalogo`, fornecida no pacote da organização. Os três fluxos partem de cópias independentes; não reutilize o resultado de um fluxo como ponto inicial de outro.
+O README e os documentos de operação fornecem os comandos de execução. Use primeiro os cenários normais dos dois serviços para reconhecer a base. Os detalhes dos testes não precisam ser implementados novamente.
 
-O README registra ponto de partida, como executar, como verificar e o link para este enunciado. Commits, PRs e arquivos de resolução ficam neste repositório. O texto de aprendizado pode ser publicado no jardim. Não é necessário criar projetos no GitLab.
+### Organização do trabalho
+
+A `main` pode permanecer como base de estudo. Neste roteiro, `main-resolucao` será o único tronco ativo da prática. Essa escolha de nome preserva a base didática; não cria uma segunda linha de desenvolvimento do produto. A referência `lab03-inicio` pode identificar o commit inicial sem ser movida depois.
+
+Não criaremos `develop`, `release` ou `hotfix` para conduzir esta migração. Cada incremento terá uma branch curta, um PR para `main-resolucao`, revisão e integração. O próximo incremento parte do tronco atualizado, e não da feature anterior ainda pendente.
 
 ## Desenvolvimento da demanda
 
+### Entender o que deve ser compartilhado
+
+Leia `.github/workflows/ci-catalogo.yml` e `ci-supervisao.yml` lado a lado. Identifique o que é execução comum e o que é configuração de cada serviço. Execute o verificador localmente e compare os campos dos relatórios. A ordem dos passos é semelhante, mas os diretórios e as versões devem continuar explícitos.
+
+O contrato mínimo da automação compartilhada será: caminho do projeto, caminho dos testes relativo ao projeto, uma versão de Python por chamada e cenário de validação. O documento `docs/contrato-da-automacao.md` define seus nomes, tipos e resultados. A matriz continuará no consumidor que precisa de mais de uma versão.
+
+### Incremento 1 — Introduzir um padrão que já possa ser exercitado
+
+Crie um workflow reutilizável com `workflow_call` em `.github/workflows/`. Ele deve receber os parâmetros do contrato e executar o fluxo comum: obter o projeto, preparar Python, executar a ferramenta pronta e registrar o resultado sem mascarar falhas.
+
+Crie também uma chamada temporária de teste, acionada por push e PR, para exercitar esse padrão antes de migrar os consumidores oficiais. Use o catálogo em Python 3.11, com o cenário normal. Essa chamada precisa passar no commit proposto; a mera existência de um arquivo YAML não comprova funcionamento.
+
+Integre o primeiro PR mantendo os dois workflows originais funcionando. O padrão já estará disponível e testado, mas ainda não foi adotado pelos consumidores. Isso é um estado intermediário utilizável. O nome sugerido do arquivo compartilhado é `_verificacao-python.yml`; o sublinhado é apenas uma convenção visual.
+
+### Incremento 2 — Migrar somente o catálogo
+
+Substitua a implementação repetida do job de catálogo por uma chamada ao padrão. Preserve o nome do workflow, seus eventos, a opção manual de cenário e as duas versões de Python. A supervisão continua usando sua implementação anterior.
+
+Use uma referência local ao workflow reutilizável, como `./.github/workflows/_verificacao-python.yml`. Neste laboratório, ela seleciona o arquivo da mesma revisão do consumidor, permitindo verificar a alteração ainda na branch do PR. Não use uma referência à `main` original preservada como base, pois ela não contém sua implementação nova.
+
+Confira o cenário normal nas duas versões e a reprovação controlada pelo consumidor catálogo. O resultado negativo esperado não deve ser “corrigido” para ficar verde. Confirme também a execução normal da supervisão na mesma revisão integrada. Só então avance para o segundo consumidor.
+
+### Incremento 3 — Migrar a supervisão preservando suas diferenças
+
+Adapte o workflow de supervisão para chamar o mesmo padrão. Ele precisa passar `services/supervisao`, o diretório `verificacoes` e Python 3.12. Não mude o projeto para que ele caiba em um caminho fixo escondido no padrão.
+
+Execute os cenários normal e falha na supervisão e confirme que o catálogo continua passando no cenário normal. O log e o relatório devem identificar o serviço correto. Um check verde com zero testes ou com testes do outro serviço não é uma aprovação válida.
+
+Integre esse PR. Os dois consumidores passam a utilizar a mesma implementação. Uma correção no padrão poderá ser exercitada pelos dois, mas o impacto dessa mudança precisará continuar sendo avaliado.
+
+### Incremento 4 — Encerrar a migração
+
+Remova a chamada temporária usada para provar o primeiro incremento, quando os dois consumidores já cobrirem o padrão. Confira que checkout, preparação de Python, comando de validação e registro comum estão definidos no workflow compartilhado, e não copiados nos consumidores. A configuração específica e a matriz do catálogo permanecem nos consumidores.
+
+Faça uma cópia limpa da revisão integrada e execute as verificações locais. Confirme também as execuções normais dos consumidores no GitHub. Finalize com uma explicação curta dos estados intermediários e dos resultados reais. Não é necessário publicar uma Release nem inventar outro incidente para encerrar esta prática.
+
+### Arquitetura inicial e resultado esperado
+
 ```mermaid
 flowchart TD
- A["Contrato legado"] --> B["Expandir sem remover"]
- B --> C["Adotar contrato novo"]
- C --> D["Verificar consumidores"]
- D -->|adoção incompleta| C
- D -->|adoção confirmada| E["Remover legado"]
+    A["CI do catálogo · execução própria"] --> V["Executor de testes pronto"]
+    B["CI da supervisão · execução própria"] --> V
+    V --> C["Projeto catálogo e seus testes"]
+    V --> S["Projeto supervisão e seus testes"]
 ```
 
-### Planejar compatibilidade
+O executor já é comum, mas a orquestração em YAML está duplicada. Depois da migração:
 
-Defina etapas de expansão, adoção e eventual remoção. Diga quais resultados precisam permanecer verdadeiros entre elas e o que permitirá considerar o consumidor antigo migrado.
-
-### Integrar progresso
-
-Implemente a estrutura nova mantendo a resposta antiga. Depois acrescente suporte ao consumidor novo sem habilitá-lo para todos. Integre cada incremento verificado por branches curtas; não acumule uma develop permanente ou trabalho indispensável apenas local.
-
-### Habilitar e observar
-
-Ative o comportamento novo por configuração e verifique os dois consumidores. Demonstre a diferença entre desabilitar uma opção e reverter código. Se uma etapa depender de mudança ainda não integrada, reorganize a entrega.
-
-### Encerrar a migração
-
-Remova o legado somente depois de demonstrar que deixou de ser necessário. Entregue a sequência de versões, resultados intermediários e justificativa de como cada ponto poderia ser utilizado por outra pessoa.
+```mermaid
+flowchart TD
+    A["CI do catálogo · matriz e parâmetros"] --> W["Workflow de validação compartilhado"]
+    B["CI da supervisão · parâmetros"] --> W
+    W --> P["Checkout e Python da chamada"]
+    P --> V["Executor e testes do serviço selecionado"]
+    V --> R["Resultado obrigatório e diagnóstico"]
+```
 
 ## Incidente para investigar
 
-Um incremento passa no teste novo, mas depende de um arquivo que ficou apenas na máquina da autora. A verificação a partir de uma cópia limpa deve revelar o problema antes de prosseguir.
+Durante a migração, uma chamada usa um diretório de testes incorreto. A aplicação existe, mas isso não comprova que suas verificações foram executadas. O executor fornecido rejeita diretórios ausentes e também a descoberta de zero testes.
+
+Para diagnosticar sem alterar a aplicação, use localmente um caminho inexistente, como `tests-inexistentes`, e observe o retorno. Na solução YAML, a evidência deve mostrar os caminhos recebidos e o serviço verificado. Não acrescente um caminho fixo para esconder uma entrada errada; corrija a configuração do consumidor ou o repasse do parâmetro.
+
+Esse caso faz parte da verificação da migração. Não exige uma branch de recuperação ou um procedimento de rollback ao terminar.
 
 ## Critérios de conclusão
 
-A principal permanece verificável em cada integração; há evidência de compatibilidade durante a transição e de recuperação da habilitação. A conclusão explica a diferença para GitHub Flow: aqui a decomposição e a integração frequente são restrições centrais, não apenas a ausência de develop.
+| Estado integrado | Catálogo | Supervisão |
+|---|---|---|
+| Base | Pipeline própria | Pipeline própria |
+| Padrão introduzido | Pipeline própria | Pipeline própria |
+| Primeiro consumidor migrado | Chama o padrão | Pipeline própria |
+| Ambos migrados | Chama o padrão | Chama o padrão |
 
-As evidências fazem parte da entrega: resultados reproduzíveis, diferenças relevantes, histórico de revisão e observações do serviço devem sustentar suas conclusões. Escolha texto, logs, tabelas ou imagens conforme o que precisa demonstrar.
+- O padrão é exercitável antes de substituir as pipelines existentes.
+- O catálogo continua executando em Python 3.11 e 3.12; a supervisão continua em 3.12.
+- Os testes executados pertencem ao projeto indicado: a base tem 13 testes de catálogo e 7 de supervisão.
+- O cenário normal aprova; a falha controlada reprova a execução consumidora em ambos os serviços.
+- Caminhos inválidos e ausência de testes não produzem aprovação falsa.
+- Existem evidências de pelo menos um estado intermediário integrado em que apenas um consumidor migrou.
+- Cada PR tem um propósito utilizável e chega ao tronco antes de começar a etapa dependente seguinte.
+- A cópia limpa não depende de arquivos locais, caches ou relatórios versionados.
+- A implementação compartilhada não contém caminhos fixos de um consumidor no lugar dos parâmetros.
+- A resolução registra resultados reais e identifica revisão própria quando não houve outra pessoa revisora.
 
-### Aceitação em uma entrega de equipe
+Guarde os links dos PRs e das execuções com o commit correspondente. Um registro curto por incremento basta: o que mudou, o que continuou funcionando e qual evidência sustenta isso. Falhas controladas devem estar identificadas como testes de diagnóstico. Não é preciso preencher um relatório extenso para cada commit.
 
-Demonstre pelo menos um estado intermediário utilizável, a ativação da mudança e sua desativação. Remover o contrato antigo só é permitido após comprovar a migração dos consumidores; registre o motivo de qualquer adiamento.
+### O que muda em relação ao Git Flow
 
-### Comparação com GitLab
+No Lab 2, mantivemos uma linha publicada e uma próxima versão em estabilização. Aqui, a restrição é decompor a migração para integrar progresso rapidamente em um único tronco ativo. Ter quatro commits acumulados numa branch longa não substitui quatro estados integrados e utilizáveis. Branches curtas e PRs continuam possíveis; o ponto é o tamanho e a frequência da integração.
 
-A integração frequente e a decomposição não dependem do provedor. No GitLab você usaria MRs curtos; nesta prática usamos PRs no GitHub.
+### Limites da representação
+
+Os consumidores estão no mesmo repositório para tornar a migração acessível e reproduzível. Em uma adoção entre repositórios, também seriam necessários controle de acesso, referências versionadas do padrão e coordenação da atualização de cada consumidor. Isso não está sendo declarado como implementado aqui.
+
+Esta prática reutiliza automação de CI. Ela não cria uma esteira completa de deploy, não implanta um serviço e não cobre governança de toda uma organização. Docker terá seu próprio problema de construção e execução em uma etapa posterior.
 
 ## Referências
 
-- https://trunkbaseddevelopment.com/
-- https://git-scm.com/docs
+- [Reutilizar workflows — GitHub](https://docs.github.com/en/actions/how-tos/reuse-automations/reuse-workflows)
+- [Contextos do Actions — GitHub](https://docs.github.com/en/actions/reference/workflows-and-actions/contexts)
+- [Matriz de jobs — GitHub](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/run-job-variations)
+- [Trunk-Based — DORA](https://dora.dev/capabilities/trunk-based-development/)
+- [Reuso e padronização de CI/CD — GitHub](https://github.blog/enterprise-software/devops/building-organization-wide-governance-and-re-use-for-ci-cd-and-automation-with-github-actions/)
