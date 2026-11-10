@@ -58,7 +58,16 @@ function addRelation(rel={}){const row=document.createElement('div');row.classNa
 function build(){capture();const f=draft.fields;const headings=[...data.schema.types[f.type],...Object.keys(draft.sections).filter(h=>(editing||h==='Resolução e resultados')&&!data.schema.types[f.type].includes(h))];const slug=editing?.slug||folders[f.type]+'/'+f.slug;if(data.notes.some(n=>n.slug===slug&&n.slug!==editing?.slug))throw Error('Já existe uma nota neste caminho. Use Editar esta página ou outro nome.');
 if(f.type!=='laboratorio'&&!draft.relations.length)throw Error('Adicione ao menos uma relação.');
 const tags=f.tags.split(',').map(x=>x.trim()).filter(Boolean);if(!tags.length||tags.some(x=>!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(x)))throw Error('Use tags sem espaços ou acentos, separadas por vírgula.');
-if(!/https?:\/\/\S+/.test(draft.sections['Referências']||''))throw Error('Inclua uma referência HTTP(S).');
+const pagesWithoutRequiredReferences = new Set([
+  'index',
+  'conceitos/index',
+  'laboratorios/index',
+]);
+
+if (
+  !pagesWithoutRequiredReferences.has(slug) &&
+  !/https?:\/\/\S+/.test(draft.sections['Referências'] || '')
+) throw Error('Inclua uma referência HTTP(S).');
 const date=new Date().toLocaleDateString('sv-SE');const meta={...(editing?.meta||{}),title:f.title.trim(),description:f.description.trim(),type:f.type,stage:f.stage,status:f.status,created:editing?.meta.created||date,updated:date,tags,relations:draft.relations};
 if(f.type==='laboratorio')delete meta.relations;
 const relationLines=draft.relations.map(r=>`- [[${r.target}|${data.notes.find(n=>n.slug===r.target).title}]] — ${r.kind}.`).join('\n');
