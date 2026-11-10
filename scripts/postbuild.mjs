@@ -10,16 +10,52 @@ for(const n of notes){
  const filename=path.join('public',n.slug+'.html');if(!fs.existsSync(filename))throw Error(`HTML ausente: ${filename}`);
  let html=fs.readFileSync(filename,'utf8'); const prefix='../'.repeat(n.slug.split('/').length-1)||'./';
  const github=`https://github.com/${s.repository}`;
- const nav=`<nav class="garden-nav" aria-label="Navegação do jardim"><a href="${prefix}index.html">🌿 Início</a><a href="${prefix}conceitos/index.html">Conceitos</a><a href="${prefix}mapa.html">Mapa</a><a href="${prefix}laboratorios/index.html">Laboratórios</a><a href="https://github.com/${esc(s.studyOrganization||'jardim-plataforma')}">Projetos de estudo</a><a href="${prefix}studio.html">＋ Nova nota</a><a href="${github}/edit/${encodeURIComponent(s.branch)}/content/${n.slug}.md">Editar esta página</a><a href="${github}/edit/${encodeURIComponent(s.branch)}/site.settings.json">Configurar</a></nav>`;
+ const nav=`<nav class="garden-nav" aria-label="Navegação do jardim"><a href="${prefix}index.html">🌿 Início</a><a href="${prefix}conceitos/index.html">Conceitos</a><a href="${prefix}mapa.html">Mapa</a><a href="${prefix}laboratorios/index.html">Laboratórios</a><a href="https://github.com/${esc(s.studyOrganization||'jardim-plataforma')}">GitHub</a><a href="${prefix}studio.html">＋ Nova nota</a><a href="${github}/edit/${encodeURIComponent(s.branch)}/content/${n.slug}.md">Editar esta página</a><a href="${github}/edit/${encodeURIComponent(s.branch)}/site.settings.json">Configurar</a></nav>`;
  html=html.replace(/<body([^>]*)>/,`<body$1>${nav}`);
- if(n.meta.type==='laboratorio'||n.slug==='laboratorios/index'){
+ if(n.meta.type==='laboratorio'){
  const edit=`<aside class="lab-edit"><a href="${prefix}studio.html?editar=${encodeURIComponent(n.slug)}">${n.slug==='laboratorios/index'?'Editar apresentação e links':'Editar laboratório'}</a><p>O texto é editável. A publicação é concluída no GitHub.</p></aside>`;
  html=html.replace(/(<article[^>]*>)/,'$1'+edit);
  }
- if(n.slug==='laboratorios/index'){
- const labs=notes.filter(note=>note.meta.type==='laboratorio').sort((a,b)=>a.slug.localeCompare(b.slug));
- const catalog=`<section id="lab-catalog" aria-label="Demandas de estudo"><h2>Demandas de estudo (${labs.length})</h2><div class="lab-grid">${labs.map(note=>`<article class="lab-card"><h3><a href="${note.slug.split('/').slice(1).join('/')}.html">${esc(note.meta.title)}</a></h3><p>${esc(note.meta.description)}</p><p class="lab-tags">${note.meta.tags.map(tag=>`<span>${esc(tag)}</span>`).join(" ")}</p><a href="${prefix}studio.html?editar=${encodeURIComponent(note.slug)}">Editar laboratório</a></article>`).join('')}</div></section>`;
- html=html.replace('</article>',catalog+'</article>');
+ if (n.slug === 'laboratorios/index') {
+  const labs = notes
+    .filter(note => note.meta.type === 'laboratorio')
+    .sort((a, b) => a.slug.localeCompare(b.slug));
+
+  const cards = labs.map(note => `
+    <article class="lab-card">
+      <h3>
+        <a href="${note.slug.split('/').slice(1).join('/')}.html">
+          ${esc(note.meta.title)}
+        </a>
+      </h3>
+      <p>${esc(note.meta.description)}</p>
+      <p class="lab-tags">
+        ${note.meta.tags.map(tag => `<span>${esc(tag)}</span>`).join(' ')}
+      </p>
+      <a href="${prefix}studio.html?editar=${encodeURIComponent(note.slug)}">
+        Editar laboratório
+      </a>
+    </article>
+  `).join('');
+
+  const catalog = `
+    <section id="lab-catalog" aria-label="Demandas de estudo">
+      <h2>Demandas de estudo (${labs.length})</h2>
+      <div class="lab-grid">${cards}</div>
+      <nav class="lab-pagination" aria-label="Paginação de demandas">
+        <button id="lab-prev" type="button">Anterior</button>
+        <span id="lab-page-info" aria-live="polite"></span>
+        <button id="lab-next" type="button">Próxima</button>
+      </nav>
+    </section>
+  `;
+
+  html = html.replace('</article>', catalog + '</article>');
+
+  html = html.replace(
+    '</head>',
+    `<script type="module" src="${prefix}labs-pagination.js"></script></head>`
+  );
  }
  if(n.meta.type==='conceito'){
  const icon=n.slug.split('/').pop();if(fs.existsSync('web/icons/'+icon+'.svg'))html=html.replace(/(<article[^>]*>)/,`$1<div class="concept-brand"><img src="${prefix}icons/${icon}.svg" width="54" height="54" alt="Ícone de ${esc(n.meta.title)}"></div>`);
@@ -31,11 +67,34 @@ for(const n of notes){
  const catalog=`<section id="concept-catalog" aria-label="Todos os conceitos"><h2>Todos os conceitos (${concepts.length})</h2><ul>${concepts.map(note=>`<li><a href="${note.slug.split('/').slice(1).join('/')}.html">${esc(note.meta.title)}</a> — ${esc(note.meta.description)}</li>`).join('')}</ul></section>`;
  html=html.replace('</article>',catalog+'</article>');
  }
- if(n.slug==='mapa'){
- html=html.replace('<body', '<body class="garden-map"');
- html=html.replace('</head>','<link rel="stylesheet" href="map.css"><script type="module" src="map.js"></script></head>');
- html=html.replace(/(<h2[^>]*id="passo-a-passo"[^>]*>)/,fs.readFileSync('web/map-fragment.html','utf8')+'$1');
+
+ if (n.slug === 'mapa') {
+   html = html.replace(
+     /<body([^>]*)>/,
+     '<body$1 class="garden-map">'
+   );
+
+   html = html.replace(
+     '</head>',
+     `<link rel="stylesheet" href="${prefix}map.css">
+      <script type="module" src="${prefix}map.js"></script>
+      </head>`
+   );
+
+   const fragment = fs.readFileSync(
+     'web/map-fragment.html',
+     'utf8'
+   );
+
+   const target = /(<h2[^>]*id="objetivo"[^>]*>)/;
+
+   if (!target.test(html)) {
+     throw Error('Não foi possível localizar o objetivo em mapa.html');
+   }
+
+   html = html.replace(target, fragment + '$1');
  }
+
  fs.writeFileSync(filename,html);
 }
 fs.writeFileSync('public/robots.txt',`User-agent: *\nAllow: /\nSitemap: ${root}/sitemap.xml\n`);

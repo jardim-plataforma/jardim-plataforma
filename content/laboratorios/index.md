@@ -35,16 +35,3 @@ Adapte o enunciado ao seu projeto usando **Editar laboratório**. Quando houver 
 [Organização Jardim de Plataforma](https://github.com/jardim-plataforma) · [Repositórios de estudo](https://github.com/jardim-plataforma?tab=repositories) · [Docker Hub](https://hub.docker.com/)
 
 Cada demanda tem um repositório próprio na organização. O enunciado informa o nome e o ponto de partida; os repositórios guardam implementação, PRs e evidências. GitLab permanece como comparação de conceitos, sem execução paralela obrigatória. Os endereços podem ser editados aqui.
-
-## Como verificar
-
-Cada demanda informa o que caracteriza uma entrega concluída. O resultado precisa demonstrar funcionamento, decisões e recuperação quando aplicável; uma sequência de comandos executados, sozinha, não basta.
-
-## Conexões
-
-[[guias/como-contribuir]] explica como editar textos, inserir imagens e publicar. O catálogo abaixo é preenchido automaticamente pelas páginas de laboratório.
-
-## Referências
-
-- [Organizações no GitHub](https://docs.github.com/en/organizations/collaborating-with-groups-in-organizations/about-organizations)
-- [Grupos no GitLab](https://docs.gitlab.com/user/group/)

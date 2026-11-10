@@ -9,6 +9,19 @@ export function readNotes(root='content') { return files(root).filter(f=>f.endsW
  return {file,slug:path.relative(root,file).replaceAll('\\','/').slice(0,-3),meta:YAML.parse(m[1]),body:m[2]};
 }); }
 const dateOK = s=> typeof s==='string' && /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(Date.parse(s)) && new Date(s).toISOString().slice(0,10)===s;
+const pageSectionsToSkip = {
+  'index': ['Passo a passo', 'Como verificar', 'Referências'],
+  'conceitos/index': ['Passo a passo', 'Como verificar', 'Referências'],
+  'laboratorios/index': ['Como verificar', 'Conexões', 'Referências'],
+  'mapa': ['Passo a passo'],
+};
+
+const pagesWithoutRequiredReferences = new Set([
+  'index',
+  'conceitos/index',
+  'laboratorios/index',
+]);
+
 export function validate(notes) {
  const errors=[];const slugs=new Set(notes.map(n=>n.slug));const titles=new Set();
  for(const n of notes) {
@@ -26,6 +39,7 @@ export function validate(notes) {
   if(!Array.isArray(m.tags)||!m.tags.length||m.tags.some(t=>typeof t!=='string'||!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(t)))fail('tags inválidas');
   const prose=body.replace(/```[\s\S]*?```/g,'').replace(/`[^`]*`/g,'');
   for(const h of schema.types[m.type]??[]) {
+   if(pageSectionsToSkip[slug]?.includes(h)) continue;
    const escaped=h.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
    const section=prose.match(new RegExp(`^## ${escaped}\\s*\\n([\\s\\S]*?)(?=^## |$(?![\\s\\S]))`,'m'));
    if(!section||section[1].trim().length<12)fail(`seção ausente ou vazia: ${h}`);
@@ -39,10 +53,10 @@ export function validate(notes) {
    if(!rel || !slugs.has(rel.target))fail(`relação inexistente: ${rel?.target}`);
    if(rel?.target===slug)fail('relação consigo mesma');
    if(!schema.relationTypes.includes(rel?.kind))fail('tipo de relação inválido');
-   if(!links.includes(rel?.target))fail(`relação sem wikilink no corpo: ${rel?.target}`);
+   if(slug!=='laboratorios/index'&&!links.includes(rel?.target))fail(`relação sem wikilink no corpo: ${rel?.target}`);
   }
   const refs=prose.split('## Referências')[1]??'';
-  if(!/https?:\/\/[^\s)]+/.test(refs))fail('inclua referência HTTP(S)');
+  if(!pagesWithoutRequiredReferences.has(slug) && !/https?:\/\/[^\s)]+/.test(refs))fail('inclua referência HTTP(S)');
   if(/<script\b|<iframe\b|javascript\s*:|\bon\w+\s*=/i.test(prose))fail('conteúdo ativo não permitido');
   if(slug!=='index'&&/<\/?[a-z][^>]*>/i.test(prose))fail('HTML bruto não permitido em notas');
   if(/AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{30,}|-----BEGIN (?:RSA |OPENSSH )?PRIVATE KEY-----/.test(body))fail('possível credencial');

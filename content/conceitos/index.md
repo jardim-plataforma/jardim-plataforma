@@ -25,18 +25,7 @@ Entender cada peça do fluxo com calma. Cada nota explica o problema que resolve
 
 A lista de conceitos ao final desta página é gerada automaticamente a cada publicação.
 
-## Passo a passo
-
-Escolha um conceito no explorador ou no [[mapa]]. Leia sua explicação, observe as conexões e registre suas dúvidas. Você pode estudar os assuntos na ordem que fizer sentido para você.
-
-## Como verificar
-
-Depois da leitura, tente explicar a ferramenta sem usar apenas seu nome. O que ela recebe? O que entrega? O que ela não faz sozinha? Volte ao mapa para conferir a ligação.
 
 ## Conexões
 
 [[mapa]] conecta os assuntos. [[laboratorios/index]] oferece prática. [[guias/como-contribuir]] explica como ampliar as notas.
-
-## Referências
-
-- [Kubernetes: conceitos](https://kubernetes.io/docs/concepts/)

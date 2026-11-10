@@ -58,5 +58,5 @@ for(const lab of labs){
 assert.ok(!labCatalog.querySelector('.garden-nav').textContent.includes('Simulador'));
 console.log('Catálogo de laboratórios e edição de relatórios verificados.');
 
-assert.ok(labCatalog.querySelector('.lab-edit a').getAttribute('href').includes('editar=laboratorios%2Findex'));
+assert.equal(labCatalog.querySelector('.lab-edit'), null, 'a página principal não deve exibir edição');
 for(const lab of labs){assert.ok(!lab.body.includes('## Meu registro'));assert.equal(lab.meta.relations,undefined);}

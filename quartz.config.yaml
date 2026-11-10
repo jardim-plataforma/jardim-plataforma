@@ -138,6 +138,9 @@ plugins:
     layout:
       position: right
       priority: 10
+    options:
+      localGraph:
+        depth: -1
   - source: "@quartz-community/search"
     enabled: true
     layout:

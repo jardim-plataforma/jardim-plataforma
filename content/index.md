@@ -19,7 +19,7 @@ relations:
     kind: depende-de
 ---
 
-<div class="garden-hero"><span class="eyebrow">JARDIM DE PLATAFORMA · UM ESPAÇO PARA APRENDER</span><p class="hero-line">Entender uma coisa.<br>Conectar com outra.<br>Aprender no seu ritmo.</p><p>Você pode chegar com uma dúvida, uma descoberta ou algo que ainda não fez sentido. Aqui, cada estudo encontra um lugar — e uma conexão com o que veio antes.</p></div>
+<div class="garden-hero"><span class="eyebrow">JARDIM DE PLATAFORMA · DevSecOps, Engenharia de Plataforma e Arquitetura</span><p class="hero-line">Entender uma coisa.<br>Conectar com outra.<br>Aprender no seu ritmo.</p><p>Você pode chegar com uma dúvida, uma descoberta ou algo que ainda não fez sentido. Aqui, cada estudo encontra um lugar — e uma conexão com o que veio antes.</p></div>
 
 ## Objetivo
 
@@ -29,20 +29,6 @@ Aprendo com problemas que encontro no trabalho e nos estudos. As ferramentas ent
 
 <div class="garden-cards"><a href="conceitos/index.html"><b>Conceitos</b><span>Entender cada peça, com exemplos, imagens e diagramas.</span></a><a href="mapa.html"><b>Mapa de conhecimentos</b><span>Explorar as relações e descobrir onde cada assunto se conecta.</span></a><a href="laboratorios/index.html"><b>Laboratórios</b><span>Demandas práticas para experimentar e observar resultados.</span></a><a href="studio.html"><b>Registrar uma descoberta</b><span>Guardar uma explicação, uma dúvida ou um próximo estudo.</span></a></div>
 
-## Passo a passo
-
-Escolha o caminho que faz sentido hoje. Abra um conceito se quiser entender uma peça, explore o mapa se quiser enxergar o todo ou entre em um laboratório se quiser experimentar. Você pode voltar, interromper e aprofundar qualquer assunto.
-
-O simulador é uma opção dentro da prática: ajuda a experimentar o fluxo sem precisar de uma conta cloud. Os laboratórios executáveis deixam claro o que será executado e como desfazer.
-
-## Como verificar
-
-Uma descoberta pode ser pequena: conseguir explicar uma relação que antes parecia nebulosa. Registre também o que continua confuso. O status da nota organiza o conteúdo; ele não mede seu valor nem sua capacidade.
-
 ## Conexões
 
 [[conceitos/index|Conceitos]] reúne as peças. [[mapa|Mapa]] mostra as relações. [[laboratorios/index|Laboratórios]] reúne as demandas de prática.
-
-## Referências
-
-- [Aprender com documentação e prática](https://docs.docker.com/get-started/)
